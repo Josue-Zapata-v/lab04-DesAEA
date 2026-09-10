@@ -1,151 +1,545 @@
 /* ============================================================
-   My TodoListDB  
+   NeptunoDB
+   ------------------------------------------------------------
+   Motor: SQL Server (T-SQL)
    ============================================================ */
- 
-IF DB_ID(N'TodoListDB') IS NULL
+
+--  Crear la BD 
+IF DB_ID(N'NeptunoDB') IS NULL
 BEGIN
-    CREATE DATABASE TodoListDB;
+    CREATE DATABASE NeptunoDB;
 END
 GO
 
-USE TodoListDB;
+USE NeptunoDB;
 GO
- 
- 
 
-CREATE TABLE dbo.Tareas (
-    TareaID         INT IDENTITY(1,1) PRIMARY KEY,
-    Titulo          NVARCHAR(150)  NOT NULL,
-    Descripcion     NVARCHAR(MAX)  NULL,
-    Completada      BIT            NOT NULL DEFAULT 0,
-    FechaCreacion   DATETIME2      NOT NULL DEFAULT SYSDATETIME(),
-    FechaCompletada DATETIME2      NULL
+/* ------------------------------------------------------------
+  Tablas principales
+   ------------------------------------------------------------ */
+
+CREATE TABLE dbo.Categorias (
+    CategoriaID     INT IDENTITY(1,1) PRIMARY KEY,
+    NombreCategoria NVARCHAR(30)  NOT NULL,
+    Descripcion     NVARCHAR(200) NULL
 );
 GO
 
+CREATE TABLE dbo.Proveedores (
+    ProveedorID     INT IDENTITY(1,1) PRIMARY KEY,
+    CompaniaNombre  NVARCHAR(60)  NOT NULL,
+    NombreContacto  NVARCHAR(40)  NULL,
+    CargoContacto   NVARCHAR(40)  NULL,
+    Direccion       NVARCHAR(80)  NULL,
+    Ciudad          NVARCHAR(30)  NULL,
+    CodigoPostal    NVARCHAR(10)  NULL,
+    Pais            NVARCHAR(30)  NULL,
+    Telefono        NVARCHAR(24)  NULL,
+    Fax             NVARCHAR(24)  NULL
+);
+GO
+
+CREATE TABLE dbo.Clientes (
+    ClienteID       INT IDENTITY(1,1) PRIMARY KEY,
+    Empresa         NVARCHAR(60) NOT NULL,
+    NombreContacto  NVARCHAR(40) NULL,
+    Ciudad          NVARCHAR(30) NULL,
+    Pais            NVARCHAR(30) NULL,
+    Telefono        NVARCHAR(24) NULL
+);
+GO
+
+CREATE TABLE dbo.Empleados (
+    EmpleadoID       INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre           NVARCHAR(20) NOT NULL,
+    Apellidos        NVARCHAR(30) NOT NULL,
+    Cargo            NVARCHAR(40) NULL,
+    FechaNacimiento  DATE NULL,
+    FechaContratacion DATE NULL,
+    Ciudad           NVARCHAR(30) NULL,
+    Pais             NVARCHAR(30) NULL
+);
+GO
+
+CREATE TABLE dbo.Transportistas (
+    TransportistaID INT IDENTITY(1,1) PRIMARY KEY,
+    CompaniaNombre  NVARCHAR(60) NOT NULL,
+    Telefono        NVARCHAR(24) NULL
+);
+GO
+
+CREATE TABLE dbo.Productos (
+    ProductoID          INT IDENTITY(1,1) PRIMARY KEY,
+    NombreProducto      NVARCHAR(60)   NOT NULL,
+    ProveedorID         INT            NULL,
+    CategoriaID         INT            NULL,
+    CantidadPorUnidad   NVARCHAR(30)   NULL,
+    PrecioUnidad        DECIMAL(10,2)  NOT NULL DEFAULT 0,
+    UnidadesEnExistencia SMALLINT      NOT NULL DEFAULT 0,
+    UnidadesEnPedido    SMALLINT       NOT NULL DEFAULT 0,
+    NivelDeReorden      SMALLINT       NOT NULL DEFAULT 0,
+    Descontinuado       BIT            NOT NULL DEFAULT 0,
+    CONSTRAINT FK_Productos_Proveedores FOREIGN KEY (ProveedorID) REFERENCES dbo.Proveedores(ProveedorID),
+    CONSTRAINT FK_Productos_Categorias  FOREIGN KEY (CategoriaID) REFERENCES dbo.Categorias(CategoriaID)
+);
+GO
+
+CREATE TABLE dbo.Pedidos (
+    PedidoID        INT IDENTITY(1,1) PRIMARY KEY,
+    ClienteID       INT NULL,
+    EmpleadoID      INT NULL,
+    FechaPedido     DATE NOT NULL,
+    FechaRequerida  DATE NULL,
+    FechaEnvio      DATE NULL,
+    TransportistaID INT NULL,
+    Destinatario    NVARCHAR(60) NULL,
+    CiudadDestino   NVARCHAR(30) NULL,
+    PaisDestino     NVARCHAR(30) NULL,
+    CONSTRAINT FK_Pedidos_Clientes       FOREIGN KEY (ClienteID)       REFERENCES dbo.Clientes(ClienteID),
+    CONSTRAINT FK_Pedidos_Empleados      FOREIGN KEY (EmpleadoID)      REFERENCES dbo.Empleados(EmpleadoID),
+    CONSTRAINT FK_Pedidos_Transportistas FOREIGN KEY (TransportistaID) REFERENCES dbo.Transportistas(TransportistaID)
+);
+GO
+
+CREATE TABLE dbo.DetallePedidos (
+    PedidoID     INT NOT NULL,
+    ProductoID   INT NOT NULL,
+    PrecioUnidad DECIMAL(10,2) NOT NULL,
+    Cantidad     SMALLINT NOT NULL DEFAULT 1,
+    Descuento    DECIMAL(4,2) NOT NULL DEFAULT 0,
+    CONSTRAINT PK_DetallePedidos PRIMARY KEY (PedidoID, ProductoID),
+    CONSTRAINT FK_DetallePedidos_Pedidos   FOREIGN KEY (PedidoID)   REFERENCES dbo.Pedidos(PedidoID),
+    CONSTRAINT FK_DetallePedidos_Productos FOREIGN KEY (ProductoID) REFERENCES dbo.Productos(ProductoID)
+);
+GO
+
+/* ------------------------------------------------------------
+   Información Base
+   ------------------------------------------------------------ */
+
+-- Categorias
+INSERT INTO dbo.Categorias (NombreCategoria, Descripcion) VALUES
+(N'Bebidas',            N'Refrescos, cafés, tés, cervezas y otras bebidas'),
+(N'Condimentos',        N'Salsas, especias y aderezos'),
+(N'Confituras',         N'Mermeladas, dulces y postres'),
+(N'Lácteos',            N'Quesos y otros productos lácteos'),
+(N'Carnes y Embutidos', N'Carnes preparadas y embutidos');
+GO
+
+-- Proveedores
+INSERT INTO dbo.Proveedores (CompaniaNombre, NombreContacto, CargoContacto, Direccion, Ciudad, CodigoPostal, Pais, Telefono, Fax) VALUES
+(N'Lácteos García S.A.',       N'Ana García',       N'Gerente de Ventas',            N'Av. Los Álamos 245', N'Lima',      N'15024', N'Perú', N'511-4567890', N'511-4567891'),
+(N'Bebidas del Sur Ltda.',     N'Carlos Ramírez',   N'Jefe Comercial',               N'Jr. Comercio 890',   N'Arequipa',  N'04001', N'Perú', N'054-223344', N'054-223345'),
+(N'Embutidos La Preferida',    N'María Torres',     N'Coordinadora de Distribución', N'Calle Las Flores 120', N'Trujillo', N'13001', N'Perú', N'044-556677', N'044-556678'),
+(N'Condimentos Andinos SAC',   N'Jorge Quispe',     N'Gerente General',              N'Av. Industrial 500', N'Cusco',     N'08001', N'Perú', N'084-778899', N'084-778900'),
+(N'Dulces del Valle E.I.R.L.', N'Lucía Fernández',  N'Encargada de Ventas',          N'Jr. San Martín 77',  N'Chiclayo',  N'14001', N'Perú', N'074-991122', N'074-991123');
+GO
+
+-- Clientes
+INSERT INTO dbo.Clientes (Empresa, NombreContacto, Ciudad, Pais, Telefono) VALUES
+(N'Comercial Andina SAC',        N'Pedro Salazar',           N'Lima',     N'Perú', N'511-2345678'),
+(N'Supermercados del Norte',     N'Rosa Medina',             N'Trujillo', N'Perú', N'044-334455'),
+(N'Distribuidora Sureña EIRL',   N'Luis Chávez',             N'Arequipa', N'Perú', N'054-667788'),
+(N'Minimarket Central',          N'Elena Rojas',             N'Cusco',    N'Perú', N'084-112233'),
+(N'Tiendas Express SAC',         N'Miguel Ángel Paredes',    N'Chiclayo', N'Perú', N'074-445566');
+GO
+
+-- Empleados
+INSERT INTO dbo.Empleados (Nombre, Apellidos, Cargo, FechaNacimiento, FechaContratacion, Ciudad, Pais) VALUES
+(N'Juan',   N'Pérez Gómez',     N'Vendedor',           '1990-05-12', '2020-01-15', N'Lima',     N'Perú'),
+(N'María',  N'López Díaz',      N'Supervisora de Ventas', '1988-09-23', '2018-03-01', N'Lima',   N'Perú'),
+(N'Carlos', N'Ruiz Mendoza',    N'Vendedor',           '1992-02-17', '2021-06-10', N'Arequipa', N'Perú'),
+(N'Sofía',  N'Vargas Castro',   N'Gerente Regional',   '1985-11-30', '2015-08-20', N'Trujillo', N'Perú'),
+(N'Diego',  N'Fernández Ríos',  N'Vendedor',           '1995-07-08', '2022-02-01', N'Cusco',    N'Perú');
+GO
+
+-- Transportistas
+INSERT INTO dbo.Transportistas (CompaniaNombre, Telefono) VALUES
+(N'Transportes Rápido SAC',   N'511-8889900'),
+(N'Envíos Seguros EIRL',      N'511-7776655'),
+(N'Logística del Pacífico',   N'054-990011'),
+(N'Courier Nacional SA',      N'044-223344'),
+(N'TransAndino Express',      N'084-556677');
+GO
+
+-- Productos
+INSERT INTO dbo.Productos (NombreProducto, ProveedorID, CategoriaID, CantidadPorUnidad, PrecioUnidad, UnidadesEnExistencia, UnidadesEnPedido, NivelDeReorden, Descontinuado) VALUES
+(N'Café Andino Premium',    2, 1, N'500 g',  45.90, 120, 30, 20, 0),
+(N'Salsa de Ají Amarillo',  4, 2, N'300 ml', 12.50, 200, 50, 30, 0),
+(N'Mermelada de Aguaymanto',5, 3, N'250 g',  15.00,  80, 20, 15, 0),
+(N'Queso Fresco Andino',    1, 4, N'1 kg',   22.00,  60, 10, 10, 0),
+(N'Chorizo Ahumado',        3, 5, N'500 g',  18.75,  90, 25, 20, 0);
+GO
+
+-- Pedidos
+INSERT INTO dbo.Pedidos (ClienteID, EmpleadoID, FechaPedido, FechaRequerida, FechaEnvio, TransportistaID, Destinatario, CiudadDestino, PaisDestino) VALUES
+(1, 1, '2026-08-10', '2026-08-20', '2026-08-15', 1, N'Comercial Andina SAC',      N'Lima',     N'Perú'),
+(2, 3, '2026-08-12', '2026-08-22', '2026-08-18', 3, N'Supermercados del Norte',   N'Trujillo', N'Perú'),
+(3, 2, '2026-08-15', '2026-08-25', NULL,         4, N'Distribuidora Sureña EIRL', N'Arequipa', N'Perú'),
+(4, 4, '2026-08-20', '2026-08-30', '2026-08-26', 5, N'Minimarket Central',        N'Cusco',    N'Perú'),
+(5, 5, '2026-08-22', '2026-09-01', '2026-08-28', 2, N'Tiendas Express SAC',       N'Chiclayo', N'Perú');
+GO
+
+-- DetallePedidos
+INSERT INTO dbo.DetallePedidos (PedidoID, ProductoID, PrecioUnidad, Cantidad, Descuento) VALUES
+(1, 1, 45.90, 10, 0.00),
+(2, 2, 12.50, 25, 0.05),
+(3, 3, 15.00, 15, 0.00),
+(4, 4, 22.00,  8, 0.10),
+(5, 5, 18.75, 12, 0.00);
+GO
+
+/* ------------------------------------------------------------
+  Validar tablas
+   ------------------------------------------------------------ */
+SELECT 'Categorias' AS Tabla, COUNT(*) AS Registros FROM dbo.Categorias
+UNION ALL SELECT 'Proveedores', COUNT(*) FROM dbo.Proveedores
+UNION ALL SELECT 'Clientes', COUNT(*) FROM dbo.Clientes
+UNION ALL SELECT 'Empleados', COUNT(*) FROM dbo.Empleados
+UNION ALL SELECT 'Transportistas', COUNT(*) FROM dbo.Transportistas
+UNION ALL SELECT 'Productos', COUNT(*) FROM dbo.Productos
+UNION ALL SELECT 'Pedidos', COUNT(*) FROM dbo.Pedidos
+UNION ALL SELECT 'DetallePedidos', COUNT(*) FROM dbo.DetallePedidos;
+GO
+
 /* ============================================================
-   STORED PROCEDURES  
+   PROCEDIMIENTOS ALMACENADOS
    ============================================================ */
 
--- Crear tarea
-CREATE OR ALTER PROCEDURE dbo.usp_Tarea_Crear
-    @Titulo      NVARCHAR(150),
-    @Descripcion NVARCHAR(MAX) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    BEGIN TRY
-        INSERT INTO dbo.Tareas (Titulo, Descripcion)
-        VALUES (@Titulo, @Descripcion);
-
-        SELECT SCOPE_IDENTITY() AS TareaID;
-    END TRY
-    BEGIN CATCH
-        THROW;
-    END CATCH
-END
-GO
-
--- Obtener tarea por ID
-CREATE OR ALTER PROCEDURE dbo.usp_Tarea_ObtenerPorId
-    @TareaID INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT * FROM dbo.Tareas WHERE TareaID = @TareaID;
-END
-GO
-
--- Listar todas las tareas
-CREATE OR ALTER PROCEDURE dbo.usp_Tarea_ListarTodas
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT * FROM dbo.Tareas ORDER BY FechaCreacion DESC;
-END
-GO
-
--- Listar solo pendientes o solo completadas
-CREATE OR ALTER PROCEDURE dbo.usp_Tarea_ListarPorEstado
-    @Completada BIT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT * FROM dbo.Tareas
-    WHERE Completada = @Completada
-    ORDER BY FechaCreacion DESC;
-END
-GO
-
--- Actualizar tarea (título/descripción)
-CREATE OR ALTER PROCEDURE dbo.usp_Tarea_Actualizar
-    @TareaID     INT,
-    @Titulo      NVARCHAR(150),
-    @Descripcion NVARCHAR(MAX) = NULL
-AS
-BEGIN
-    SET NOCOUNT ON;
-    BEGIN TRY
-        UPDATE dbo.Tareas
-        SET Titulo = @Titulo,
-            Descripcion = @Descripcion
-        WHERE TareaID = @TareaID;
-
-        IF @@ROWCOUNT = 0
-            THROW 50001, 'Tarea no encontrada.', 1;
-    END TRY
-    BEGIN CATCH
-        THROW;
-    END CATCH
-END
-GO
-
--- Marcar como completada o no completada
-CREATE OR ALTER PROCEDURE dbo.usp_Tarea_MarcarCompletada
-    @TareaID    INT,
-    @Completada BIT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    BEGIN TRY
-        UPDATE dbo.Tareas
-        SET Completada = @Completada,
-            FechaCompletada = CASE WHEN @Completada = 1 THEN SYSDATETIME() ELSE NULL END
-        WHERE TareaID = @TareaID;
-
-        IF @@ROWCOUNT = 0
-            THROW 50002, 'Tarea no encontrada.', 1;
-    END TRY
-    BEGIN CATCH
-        THROW;
-    END CATCH
-END
-GO
-
--- Eliminar tarea
-CREATE OR ALTER PROCEDURE dbo.usp_Tarea_Eliminar
-    @TareaID INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    BEGIN TRY
-        DELETE FROM dbo.Tareas WHERE TareaID = @TareaID;
-
-        IF @@ROWCOUNT = 0
-            THROW 50003, 'Tarea no encontrada.', 1;
-    END TRY
-    BEGIN CATCH
-        THROW;
-    END CATCH
-END
-GO
-
 /* ============================================================
-   Datos de prueba  
+   1. CRUD DE CATEGORÍAS
    ============================================================ */
 
-INSERT INTO dbo.Tareas (Titulo, Descripcion) VALUES
-(N'Comprar víveres', N'Leche, pan, huevos'),
-(N'Estudiar SQL', N'Repasar stored procedures'),
-(N'Llamar al dentista', N'Agendar cita de control');
+-- Listar
+CREATE OR ALTER PROCEDURE dbo.sp_ListarCategorias
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT CategoriaID, NombreCategoria, Descripcion 
+    FROM dbo.Categorias;
+END;
+GO
+
+-- Insertar
+CREATE OR ALTER PROCEDURE dbo.sp_InsertarCategoria
+    @NombreCategoria NVARCHAR(30),
+    @Descripcion     NVARCHAR(200) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.Categorias (NombreCategoria, Descripcion)
+    VALUES (@NombreCategoria, @Descripcion);
+
+    SELECT SCOPE_IDENTITY() AS CategoriaID;
+END;
+GO
+
+-- Actualizar
+CREATE OR ALTER PROCEDURE dbo.sp_ActualizarCategoria
+    @CategoriaID     INT,
+    @NombreCategoria NVARCHAR(30),
+    @Descripcion     NVARCHAR(200) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE dbo.Categorias
+    SET NombreCategoria = @NombreCategoria,
+        Descripcion     = @Descripcion
+    WHERE CategoriaID = @CategoriaID;
+END;
+GO
+
+-- Eliminar
+CREATE OR ALTER PROCEDURE dbo.sp_EliminarCategoria
+    @CategoriaID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM dbo.Categorias WHERE CategoriaID = @CategoriaID;
+END;
+GO
+
+
+/* ============================================================
+   2. CRUD DE PROVEEDORES
+   ============================================================ */
+
+-- Listar
+CREATE OR ALTER PROCEDURE dbo.sp_ListarProveedores
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT ProveedorID, CompaniaNombre, NombreContacto, CargoContacto,
+           Direccion, Ciudad, CodigoPostal, Pais, Telefono, Fax
+    FROM dbo.Proveedores;
+END;
+GO
+
+-- Insertar
+CREATE OR ALTER PROCEDURE dbo.sp_InsertarProveedor
+    @CompaniaNombre NVARCHAR(60),
+    @NombreContacto NVARCHAR(40) = NULL,
+    @CargoContacto  NVARCHAR(40) = NULL,
+    @Direccion      NVARCHAR(80) = NULL,
+    @Ciudad         NVARCHAR(30) = NULL,
+    @CodigoPostal   NVARCHAR(10) = NULL,
+    @Pais           NVARCHAR(30) = NULL,
+    @Telefono       NVARCHAR(24) = NULL,
+    @Fax            NVARCHAR(24) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.Proveedores (CompaniaNombre, NombreContacto, CargoContacto, Direccion, Ciudad, CodigoPostal, Pais, Telefono, Fax)
+    VALUES (@CompaniaNombre, @NombreContacto, @CargoContacto, @Direccion, @Ciudad, @CodigoPostal, @Pais, @Telefono, @Fax);
+
+    SELECT SCOPE_IDENTITY() AS ProveedorID;
+END;
+GO
+
+-- Actualizar
+CREATE OR ALTER PROCEDURE dbo.sp_ActualizarProveedor
+    @ProveedorID    INT,
+    @CompaniaNombre NVARCHAR(60),
+    @NombreContacto NVARCHAR(40) = NULL,
+    @CargoContacto  NVARCHAR(40) = NULL,
+    @Direccion      NVARCHAR(80) = NULL,
+    @Ciudad         NVARCHAR(30) = NULL,
+    @CodigoPostal   NVARCHAR(10) = NULL,
+    @Pais           NVARCHAR(30) = NULL,
+    @Telefono       NVARCHAR(24) = NULL,
+    @Fax            NVARCHAR(24) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE dbo.Proveedores
+    SET CompaniaNombre = @CompaniaNombre,
+        NombreContacto = @NombreContacto,
+        CargoContacto  = @CargoContacto,
+        Direccion      = @Direccion,
+        Ciudad         = @Ciudad,
+        CodigoPostal   = @CodigoPostal,
+        Pais           = @Pais,
+        Telefono       = @Telefono,
+        Fax            = @Fax
+    WHERE ProveedorID = @ProveedorID;
+END;
+GO
+
+-- Eliminar
+CREATE OR ALTER PROCEDURE dbo.sp_EliminarProveedor
+    @ProveedorID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM dbo.Proveedores WHERE ProveedorID = @ProveedorID;
+END;
+GO
+
+
+/* ============================================================
+   3. CRUD DE PRODUCTOS
+   ============================================================ */
+
+-- Listar (con nombres de Categoría y Proveedor para WPF)
+CREATE OR ALTER PROCEDURE dbo.sp_ListarProductos
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT p.ProductoID, p.NombreProducto, p.ProveedorID, pr.CompaniaNombre AS Proveedor,
+           p.CategoriaID, c.NombreCategoria AS Categoria, p.CantidadPorUnidad,
+           p.PrecioUnidad, p.UnidadesEnExistencia, p.UnidadesEnPedido,
+           p.NivelDeReorden, p.Descontinuado
+    FROM dbo.Productos p
+    LEFT JOIN dbo.Categorias c ON p.CategoriaID = c.CategoriaID
+    LEFT JOIN dbo.Proveedores pr ON p.ProveedorID = pr.ProveedorID;
+END;
+GO
+
+-- Insertar
+CREATE OR ALTER PROCEDURE dbo.sp_InsertarProducto
+    @NombreProducto      NVARCHAR(60),
+    @ProveedorID         INT = NULL,
+    @CategoriaID         INT = NULL,
+    @CantidadPorUnidad   NVARCHAR(30) = NULL,
+    @PrecioUnidad        DECIMAL(10,2) = 0,
+    @UnidadesEnExistencia SMALLINT = 0,
+    @UnidadesEnPedido    SMALLINT = 0,
+    @NivelDeReorden      SMALLINT = 0,
+    @Descontinuado       BIT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.Productos (NombreProducto, ProveedorID, CategoriaID, CantidadPorUnidad, PrecioUnidad, UnidadesEnExistencia, UnidadesEnPedido, NivelDeReorden, Descontinuado)
+    VALUES (@NombreProducto, @ProveedorID, @CategoriaID, @CantidadPorUnidad, @PrecioUnidad, @UnidadesEnExistencia, @UnidadesEnPedido, @NivelDeReorden, @Descontinuado);
+
+    SELECT SCOPE_IDENTITY() AS ProductoID;
+END;
+GO
+
+-- Actualizar
+CREATE OR ALTER PROCEDURE dbo.sp_ActualizarProducto
+    @ProductoID          INT,
+    @NombreProducto      NVARCHAR(60),
+    @ProveedorID         INT = NULL,
+    @CategoriaID         INT = NULL,
+    @CantidadPorUnidad   NVARCHAR(30) = NULL,
+    @PrecioUnidad        DECIMAL(10,2),
+    @UnidadesEnExistencia SMALLINT,
+    @UnidadesEnPedido    SMALLINT,
+    @NivelDeReorden      SMALLINT,
+    @Descontinuado       BIT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE dbo.Productos
+    SET NombreProducto       = @NombreProducto,
+        ProveedorID          = @ProveedorID,
+        CategoriaID          = @CategoriaID,
+        CantidadPorUnidad    = @CantidadPorUnidad,
+        PrecioUnidad         = @PrecioUnidad,
+        UnidadesEnExistencia = @UnidadesEnExistencia,
+        UnidadesEnPedido     = @UnidadesEnPedido,
+        NivelDeReorden       = @NivelDeReorden,
+        Descontinuado        = @Descontinuado
+    WHERE ProductoID = @ProductoID;
+END;
+GO
+
+-- Eliminar
+CREATE OR ALTER PROCEDURE dbo.sp_EliminarProducto
+    @ProductoID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM dbo.Productos WHERE ProductoID = @ProductoID;
+END;
+GO
+
+
+/* ============================================================
+   4. CRUD DE PEDIDOS
+   ============================================================ */
+
+-- Listar
+CREATE OR ALTER PROCEDURE dbo.sp_ListarPedidos
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT p.PedidoID, p.ClienteID, cl.Empresa AS Cliente,
+           p.EmpleadoID, (e.Nombre + ' ' + e.Apellidos) AS Empleado,
+           p.FechaPedido, p.FechaRequerida, p.FechaEnvio,
+           p.TransportistaID, t.CompaniaNombre AS Transportista,
+           p.Destinatario, p.CiudadDestino, p.PaisDestino
+    FROM dbo.Pedidos p
+    LEFT JOIN dbo.Clientes cl ON p.ClienteID = cl.ClienteID
+    LEFT JOIN dbo.Empleados e ON p.EmpleadoID = e.EmpleadoID
+    LEFT JOIN dbo.Transportistas t ON p.TransportistaID = t.TransportistaID;
+END;
+GO
+
+-- Insertar
+CREATE OR ALTER PROCEDURE dbo.sp_InsertarPedido
+    @ClienteID       INT = NULL,
+    @EmpleadoID      INT = NULL,
+    @FechaPedido     DATE,
+    @FechaRequerida  DATE = NULL,
+    @FechaEnvio      DATE = NULL,
+    @TransportistaID INT = NULL,
+    @Destinatario    NVARCHAR(60) = NULL,
+    @CiudadDestino   NVARCHAR(30) = NULL,
+    @PaisDestino     NVARCHAR(30) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO dbo.Pedidos (ClienteID, EmpleadoID, FechaPedido, FechaRequerida, FechaEnvio, TransportistaID, Destinatario, CiudadDestino, PaisDestino)
+    VALUES (@ClienteID, @EmpleadoID, @FechaPedido, @FechaRequerida, @FechaEnvio, @TransportistaID, @Destinatario, @CiudadDestino, @PaisDestino);
+
+    SELECT SCOPE_IDENTITY() AS PedidoID;
+END;
+GO
+
+-- Actualizar
+CREATE OR ALTER PROCEDURE dbo.sp_ActualizarPedido
+    @PedidoID        INT,
+    @ClienteID       INT = NULL,
+    @EmpleadoID      INT = NULL,
+    @FechaPedido     DATE,
+    @FechaRequerida  DATE = NULL,
+    @FechaEnvio      DATE = NULL,
+    @TransportistaID INT = NULL,
+    @Destinatario    NVARCHAR(60) = NULL,
+    @CiudadDestino   NVARCHAR(30) = NULL,
+    @PaisDestino     NVARCHAR(30) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE dbo.Pedidos
+    SET ClienteID       = @ClienteID,
+        EmpleadoID      = @EmpleadoID,
+        FechaPedido     = @FechaPedido,
+        FechaRequerida  = @FechaRequerida,
+        FechaEnvio      = @FechaEnvio,
+        TransportistaID = @TransportistaID,
+        Destinatario    = @Destinatario,
+        CiudadDestino   = @CiudadDestino,
+        PaisDestino     = @PaisDestino
+    WHERE PedidoID = @PedidoID;
+END;
+GO
+
+-- Eliminar
+CREATE OR ALTER PROCEDURE dbo.sp_EliminarPedido
+    @PedidoID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    -- Primero eliminamos los detalles asociados para no violar la FK
+    DELETE FROM dbo.DetallePedidos WHERE PedidoID = @PedidoID;
+    DELETE FROM dbo.Pedidos WHERE PedidoID = @PedidoID;
+END;
+GO
+
+
+/* ============================================================
+   5. BÚSQUEDA DE PROVEEDORES (NombreContacto y Ciudad)
+   ============================================================ */
+CREATE OR ALTER PROCEDURE dbo.sp_BuscarProveedores
+    @NombreContacto NVARCHAR(40) = NULL,
+    @Ciudad         NVARCHAR(30) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT ProveedorID, CompaniaNombre, NombreContacto, CargoContacto,
+           Direccion, Ciudad, CodigoPostal, Pais, Telefono, Fax
+    FROM dbo.Proveedores
+    WHERE (@NombreContacto IS NULL OR NombreContacto LIKE '%' + @NombreContacto + '%')
+      AND (@Ciudad IS NULL OR Ciudad LIKE '%' + @Ciudad + '%');
+END;
+GO
+
+
+/* ============================================================
+   6. REPORTE DETALLE DE PEDIDOS CON JOIN Y FILTRO DE FECHAS
+   ============================================================ */
+CREATE OR ALTER PROCEDURE dbo.sp_ReporteDetallePedidosPorFechas
+    @FechaInicio DATE,
+    @FechaFin    DATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT p.PedidoID,
+           p.FechaPedido,
+           cl.Empresa AS Cliente,
+           pr.NombreProducto AS Producto,
+           dp.PrecioUnidad,
+           dp.Cantidad,
+           dp.Descuento,
+           (dp.PrecioUnidad * dp.Cantidad * (1 - dp.Descuento)) AS Subtotal
+    FROM dbo.DetallePedidos dp
+    INNER JOIN dbo.Pedidos p ON dp.PedidoID = p.PedidoID
+    INNER JOIN dbo.Productos pr ON dp.ProductoID = pr.ProductoID
+    LEFT JOIN dbo.Clientes cl ON p.ClienteID = cl.ClienteID
+    WHERE p.FechaPedido BETWEEN @FechaInicio AND @FechaFin
+    ORDER BY p.FechaPedido DESC, p.PedidoID;
+END;
 GO
