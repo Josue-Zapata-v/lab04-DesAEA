@@ -3,142 +3,273 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:WPF_SP"
-        xmlns:models="clr-namespace:WPF_SP.Models"
+        xmlns:vm="clr-namespace:WPF_SP.ViewModels"
         mc:Ignorable="d"
-        Title="Mis Tareas" Height="720" Width="620" MinHeight="560" MinWidth="480"
-        WindowStartupLocation="CenterScreen" Background="{StaticResource BackgroundBrush}">
+        Title="Sistema de Mantenimiento - NeptunoDB" Height="600" Width="1000">
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+    
+    <Window.Resources>
+        <Style TargetType="TabItem">
+            <Setter Property="Foreground" Value="Black" />
+        </Style>
+    </Window.Resources>
 
-    <Grid Margin="28">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-
-        <!-- ===== Encabezado ===== -->
-        <Grid Grid.Row="0" Margin="0,0,0,22">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal">
-                <Border Width="42" Height="42" CornerRadius="12" Background="{StaticResource AccentBrush}" Margin="0,0,14,0">
-                    <TextBlock Text="&#xE71D;" FontFamily="{StaticResource IconFont}" FontSize="19"
-                               Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Border>
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="Mis Tareas" FontSize="22" FontWeight="Bold"/>
-                    <TextBlock Text="TodoListDB · SQL Server" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
-                </StackPanel>
-            </StackPanel>
-            <Button Grid.Column="1" Style="{StaticResource IconButton}" Content="&#xE72C;" ToolTip="Actualizar"
-                    Command="{Binding CargarCommand}" VerticalAlignment="Center" FontSize="17"/>
-        </Grid>
-
-        <!-- ===== Formulario nueva tarea ===== -->
-        <Border Grid.Row="1" Background="{StaticResource SurfaceBrush}" CornerRadius="14" Padding="18" Margin="0,0,0,16">
-            <StackPanel>
-                <TextBlock Text="Título" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="2,0,0,6"/>
-                <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding NuevoTitulo, UpdateSourceTrigger=PropertyChanged}"
-                         MaxLength="150" Margin="0,0,0,12"/>
-                <TextBlock Text="Descripción (opcional)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="2,0,0,6"/>
-                <TextBox Style="{StaticResource ModernTextBox}" Text="{Binding NuevaDescripcion, UpdateSourceTrigger=PropertyChanged}"
-                         Margin="0,0,0,14"/>
-                <Grid>
+    <Grid>
+        <TabControl Margin="10">
+            <!-- TAB 1: CATEGORIAS -->
+            <TabItem Header="Categorías">
+                <Grid DataContext="{Binding CategoriasVM}" Margin="10">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="1*" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="{Binding ErrorMessage}" Foreground="{StaticResource DangerBrush}"
-                               FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"
-                               Visibility="{Binding ErrorMessage, Converter={StaticResource StringNullOrEmptyToVisibility}}"/>
-                    <Button Grid.Column="1" Style="{StaticResource AccentButton}" Command="{Binding AgregarCommand}"
-                            HorizontalAlignment="Right">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE710;" FontFamily="{StaticResource IconFont}" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Agregar" VerticalAlignment="Center"/>
+                    
+                    <DataGrid Grid.Column="0" ItemsSource="{Binding Categorias}" SelectedItem="{Binding CategoriaSeleccionada}" AutoGenerateColumns="False" IsReadOnly="True" Margin="0,0,10,0">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ID" Binding="{Binding CategoriaID}" />
+                            <DataGridTextColumn Header="Nombre" Binding="{Binding NombreCategoria}" />
+                            <DataGridTextColumn Header="Descripción" Binding="{Binding Descripcion}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Mantenimiento de Categoría" FontWeight="Bold" Margin="0,0,0,10" />
+                        <TextBlock Text="Nombre de Categoría:" />
+                        <TextBox Text="{Binding CategoriaSeleccionada.NombreCategoria, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" />
+                        
+                        <TextBlock Text="Descripción:" />
+                        <TextBox Text="{Binding CategoriaSeleccionada.Descripcion, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10" Height="60" TextWrapping="Wrap" AcceptsReturn="True" />
+                        
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button Content="Nuevo" Command="{Binding NuevoCommand}" Width="70" Margin="5" />
+                            <Button Content="Guardar" Command="{Binding GuardarCommand}" Width="70" Margin="5" />
+                            <Button Content="Eliminar" Command="{Binding EliminarCommand}" Width="70" Margin="5" Background="LightCoral" />
                         </StackPanel>
-                    </Button>
+                    </StackPanel>
                 </Grid>
-            </StackPanel>
-        </Border>
+            </TabItem>
 
-        <!-- ===== Filtros ===== -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,16">
-            <RadioButton GroupName="Filtro" Style="{StaticResource FilterChip}" Content="Todas"
-                         IsChecked="{Binding CurrentFilter, Converter={StaticResource EnumEquals}, ConverterParameter=Todas}"/>
-            <RadioButton GroupName="Filtro" Style="{StaticResource FilterChip}" Content="Pendientes" Margin="8,0,0,0"
-                         IsChecked="{Binding CurrentFilter, Converter={StaticResource EnumEquals}, ConverterParameter=Pendientes}"/>
-            <RadioButton GroupName="Filtro" Style="{StaticResource FilterChip}" Content="Completadas" Margin="8,0,0,0"
-                         IsChecked="{Binding CurrentFilter, Converter={StaticResource EnumEquals}, ConverterParameter=Completadas}"/>
-        </StackPanel>
+            <!-- TAB 2: PROVEEDORES -->
+            <TabItem Header="Proveedores">
+                <Grid DataContext="{Binding ProveedoresVM}" Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="1*" />
+                    </Grid.ColumnDefinitions>
+                    
+                    <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="Buscar Contacto:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBox Text="{Binding BusquedaNombre, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="0,0,15,0" />
+                        
+                        <TextBlock Text="Ciudad:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBox Text="{Binding BusquedaCiudad, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="0,0,15,0" />
+                        
+                        <Button Content="Buscar" Command="{Binding BuscarCommand}" Width="80" Margin="0,0,5,0" />
+                        <Button Content="Limpiar" Command="{Binding LimpiarBusquedaCommand}" Width="80" />
+                    </StackPanel>
+                    
+                    <DataGrid Grid.Row="1" Grid.Column="0" ItemsSource="{Binding Proveedores}" SelectedItem="{Binding ProveedorSeleccionado}" AutoGenerateColumns="False" IsReadOnly="True" Margin="0,0,10,0">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ID" Binding="{Binding ProveedorID}" />
+                            <DataGridTextColumn Header="Compañía" Binding="{Binding CompaniaNombre}" />
+                            <DataGridTextColumn Header="Contacto" Binding="{Binding NombreContacto}" />
+                            <DataGridTextColumn Header="Cargo" Binding="{Binding CargoContacto}" />
+                            <DataGridTextColumn Header="Ciudad" Binding="{Binding Ciudad}" />
+                            <DataGridTextColumn Header="País" Binding="{Binding Pais}" />
+                            <DataGridTextColumn Header="Teléfono" Binding="{Binding Telefono}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    
+                    <ScrollViewer Grid.Row="1" Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Datos del Proveedor" FontWeight="Bold" Margin="0,0,0,10" />
+                            <TextBlock Text="Compañía:" />
+                            <TextBox Text="{Binding ProveedorSeleccionado.CompaniaNombre, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Contacto:" />
+                            <TextBox Text="{Binding ProveedorSeleccionado.NombreContacto, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Cargo:" />
+                            <TextBox Text="{Binding ProveedorSeleccionado.CargoContacto, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Dirección:" />
+                            <TextBox Text="{Binding ProveedorSeleccionado.Direccion, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Ciudad:" />
+                            <TextBox Text="{Binding ProveedorSeleccionado.Ciudad, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Código Postal:" />
+                            <TextBox Text="{Binding ProveedorSeleccionado.CodigoPostal, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="País:" />
+                            <TextBox Text="{Binding ProveedorSeleccionado.Pais, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Teléfono:" />
+                            <TextBox Text="{Binding ProveedorSeleccionado.Telefono, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                                <Button Content="Nuevo" Command="{Binding NuevoCommand}" Width="70" Margin="5" />
+                                <Button Content="Guardar" Command="{Binding GuardarCommand}" Width="70" Margin="5" />
+                                <Button Content="Eliminar" Command="{Binding EliminarCommand}" Width="70" Margin="5" Background="LightCoral" />
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
 
-        <!-- ===== Estado vacío ===== -->
-        <StackPanel Grid.Row="4" VerticalAlignment="Center" HorizontalAlignment="Center"
-                    Visibility="{Binding HasTareas, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
-            <TextBlock Text="&#xE71D;" FontFamily="{StaticResource IconFont}" FontSize="40"
-                       Foreground="{StaticResource BorderBrush}" HorizontalAlignment="Center"/>
-            <TextBlock Text="No hay tareas por aquí" Foreground="{StaticResource TextSecondaryBrush}"
-                       Margin="0,10,0,0" HorizontalAlignment="Center"/>
-        </StackPanel>
+            <!-- TAB 3: PRODUCTOS -->
+            <TabItem Header="Productos">
+                <Grid DataContext="{Binding ProductosVM}" Margin="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="1*" />
+                    </Grid.ColumnDefinitions>
+                    
+                    <DataGrid Grid.Column="0" ItemsSource="{Binding Productos}" SelectedItem="{Binding ProductoSeleccionado}" AutoGenerateColumns="False" IsReadOnly="True" Margin="0,0,10,0">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ID" Binding="{Binding ProductoID}" />
+                            <DataGridTextColumn Header="Producto" Binding="{Binding NombreProducto}" />
+                            <DataGridTextColumn Header="Prov. ID" Binding="{Binding ProveedorID}" />
+                            <DataGridTextColumn Header="Cat. ID" Binding="{Binding CategoriaID}" />
+                            <DataGridTextColumn Header="Precio" Binding="{Binding PrecioUnidad, StringFormat=C}" />
+                            <DataGridTextColumn Header="Stock" Binding="{Binding UnidadesEnExistencia}" />
+                            <DataGridCheckBoxColumn Header="Descontinuado" Binding="{Binding Descontinuado}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    
+                    <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Datos del Producto" FontWeight="Bold" Margin="0,0,0,10" />
+                            
+                            <TextBlock Text="Nombre del Producto:" />
+                            <TextBox Text="{Binding ProductoSeleccionado.NombreProducto, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="ID Proveedor:" />
+                            <TextBox Text="{Binding ProductoSeleccionado.ProveedorID, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="ID Categoría:" />
+                            <TextBox Text="{Binding ProductoSeleccionado.CategoriaID, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Cantidad por Unidad:" />
+                            <TextBox Text="{Binding ProductoSeleccionado.CantidadPorUnidad, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Precio:" />
+                            <TextBox Text="{Binding ProductoSeleccionado.PrecioUnidad, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Stock (Unidades en Existencia):" />
+                            <TextBox Text="{Binding ProductoSeleccionado.UnidadesEnExistencia, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <CheckBox Content="Descontinuado" IsChecked="{Binding ProductoSeleccionado.Descontinuado, UpdateSourceTrigger=PropertyChanged}" Margin="0,10,0,10" />
+                            
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <Button Content="Nuevo" Command="{Binding NuevoCommand}" Width="70" Margin="5" />
+                                <Button Content="Guardar" Command="{Binding GuardarCommand}" Width="70" Margin="5" />
+                                <Button Content="Eliminar" Command="{Binding EliminarCommand}" Width="70" Margin="5" Background="LightCoral" />
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
 
-        <!-- ===== Lista de tareas ===== -->
-        <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto"
-                      Visibility="{Binding HasTareas, Converter={StaticResource BoolToVisibility}}">
-            <ListBox Style="{StaticResource PlainListBox}" ItemsSource="{Binding Tareas}">
-                <ListBox.ItemTemplate>
-                    <DataTemplate DataType="{x:Type models:Tarea}">
-                        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="14" Padding="16">
-                            <Border.Style>
-                                <Style TargetType="Border">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Completada}" Value="True">
-                                            <Setter Property="Opacity" Value="0.55"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Border.Style>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
+            <!-- TAB 4: PEDIDOS -->
+            <TabItem Header="Pedidos">
+                <Grid DataContext="{Binding PedidosVM}" Margin="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="1*" />
+                    </Grid.ColumnDefinitions>
+                    
+                    <DataGrid Grid.Column="0" ItemsSource="{Binding Pedidos}" SelectedItem="{Binding PedidoSeleccionado}" AutoGenerateColumns="False" IsReadOnly="True" Margin="0,0,10,0">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Pedido ID" Binding="{Binding PedidoID}" />
+                            <DataGridTextColumn Header="Cliente ID" Binding="{Binding ClienteID}" />
+                            <DataGridTextColumn Header="Emp. ID" Binding="{Binding EmpleadoID}" />
+                            <DataGridTextColumn Header="Fecha Pedido" Binding="{Binding FechaPedido, StringFormat=d}" />
+                            <DataGridTextColumn Header="Fecha Envío" Binding="{Binding FechaEnvio, StringFormat=d}" />
+                            <DataGridTextColumn Header="Destinatario" Binding="{Binding Destinatario}" />
+                            <DataGridTextColumn Header="País" Binding="{Binding PaisDestino}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    
+                    <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Datos del Pedido" FontWeight="Bold" Margin="0,0,0,10" />
+                            
+                            <TextBlock Text="Cliente ID:" />
+                            <TextBox Text="{Binding PedidoSeleccionado.ClienteID, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Empleado ID:" />
+                            <TextBox Text="{Binding PedidoSeleccionado.EmpleadoID, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Fecha Pedido:" />
+                            <DatePicker SelectedDate="{Binding PedidoSeleccionado.FechaPedido, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Fecha Requerida:" />
+                            <DatePicker SelectedDate="{Binding PedidoSeleccionado.FechaRequerida, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Fecha Envío:" />
+                            <DatePicker SelectedDate="{Binding PedidoSeleccionado.FechaEnvio, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Vía (Transportista ID):" />
+                            <TextBox Text="{Binding PedidoSeleccionado.TransportistaID, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Destinatario:" />
+                            <TextBox Text="{Binding PedidoSeleccionado.Destinatario, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="Ciudad Destino:" />
+                            <TextBox Text="{Binding PedidoSeleccionado.CiudadDestino, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <TextBlock Text="País Destino:" />
+                            <TextBox Text="{Binding PedidoSeleccionado.PaisDestino, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,5" />
+                            
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                                <Button Content="Nuevo" Command="{Binding NuevoCommand}" Width="70" Margin="5" />
+                                <Button Content="Guardar" Command="{Binding GuardarCommand}" Width="70" Margin="5" />
+                                <Button Content="Eliminar" Command="{Binding EliminarCommand}" Width="70" Margin="5" Background="LightCoral" />
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
 
-                                <CheckBox Grid.Column="0" Style="{StaticResource ModernCheckBox}" IsChecked="{Binding Completada}"
-                                          VerticalAlignment="Center" Margin="0,0,14,0"
-                                          Command="{Binding DataContext.ToggleCompletadaCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                          CommandParameter="{Binding}"/>
-
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Titulo}" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"
-                                               TextDecorations="{Binding Completada, Converter={StaticResource BoolToStrikethrough}}"/>
-                                    <TextBlock Text="{Binding Descripcion}" Foreground="{StaticResource TextSecondaryBrush}"
-                                               FontSize="12.5" Margin="0,4,0,0" TextWrapping="Wrap"
-                                               Visibility="{Binding Descripcion, Converter={StaticResource StringNullOrEmptyToVisibility}}"/>
-                                    <StackPanel Orientation="Horizontal" Margin="0,7,0,0">
-                                        <TextBlock Text="&#xE787;" FontFamily="{StaticResource IconFont}" FontSize="10.5"
-                                                   Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                                        <TextBlock Text="{Binding FechaCreacion, StringFormat='dd MMM yyyy HH:mm'}" FontSize="11"
-                                                   Foreground="{StaticResource TextSecondaryBrush}" Margin="6,0,0,0"/>
-                                    </StackPanel>
-                                </StackPanel>
-
-                                <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="&#xE70F;" ToolTip="Editar"
-                                        Command="{Binding DataContext.EditarCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                        CommandParameter="{Binding}"/>
-                                <Button Grid.Column="3" Style="{StaticResource DangerIconButton}" Content="&#xE74D;" ToolTip="Eliminar"
-                                        Command="{Binding DataContext.EliminarCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                        CommandParameter="{Binding}"/>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-        </ScrollViewer>
+            <!-- TAB 5: REPORTES -->
+            <TabItem Header="Reportes">
+                <Grid DataContext="{Binding ReportesVM}" Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+                        <TextBlock Text="Fecha Inicio:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                        <DatePicker SelectedDate="{Binding FechaInicio, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,15,0" />
+                        
+                        <TextBlock Text="Fecha Fin:" VerticalAlignment="Center" Margin="0,0,5,0" />
+                        <DatePicker SelectedDate="{Binding FechaFin, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,15,0" />
+                        
+                        <Button Content="Generar Reporte" Command="{Binding GenerarReporteCommand}" Width="120" />
+                    </StackPanel>
+                    
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding Reporte}" AutoGenerateColumns="False" IsReadOnly="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Pedido ID" Binding="{Binding PedidoID}" />
+                            <DataGridTextColumn Header="Fecha" Binding="{Binding FechaPedido, StringFormat=d}" />
+                            <DataGridTextColumn Header="Cliente" Binding="{Binding Cliente}" />
+                            <DataGridTextColumn Header="Producto" Binding="{Binding Producto}" />
+                            <DataGridTextColumn Header="Precio Und." Binding="{Binding PrecioUnidad, StringFormat=C}" />
+                            <DataGridTextColumn Header="Cant." Binding="{Binding Cantidad}" />
+                            <DataGridTextColumn Header="Descuento %" Binding="{Binding Descuento}" />
+                            <DataGridTextColumn Header="Subtotal" Binding="{Binding Subtotal, StringFormat=C}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+        </TabControl>
     </Grid>
 </Window>
