@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace WPF_SP.Models;
 
@@ -17,4 +17,5 @@ public class Pedido
     public string? Destinatario { get; set; }
     public string? CiudadDestino { get; set; }
     public string? PaisDestino { get; set; }
+    public bool Activo { get; set; } = true;
 }

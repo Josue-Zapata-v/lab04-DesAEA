@@ -21,7 +21,8 @@ GO
 CREATE TABLE dbo.Categorias (
     CategoriaID     INT IDENTITY(1,1) PRIMARY KEY,
     NombreCategoria NVARCHAR(30)  NOT NULL,
-    Descripcion     NVARCHAR(200) NULL
+    Descripcion     NVARCHAR(200) NULL,
+    Activo          BIT           NOT NULL DEFAULT 1
 );
 GO
 
@@ -35,7 +36,8 @@ CREATE TABLE dbo.Proveedores (
     CodigoPostal    NVARCHAR(10)  NULL,
     Pais            NVARCHAR(30)  NULL,
     Telefono        NVARCHAR(24)  NULL,
-    Fax             NVARCHAR(24)  NULL
+    Fax             NVARCHAR(24)  NULL,
+    Activo          BIT           NOT NULL DEFAULT 1
 );
 GO
 
@@ -79,6 +81,7 @@ CREATE TABLE dbo.Productos (
     UnidadesEnPedido    SMALLINT       NOT NULL DEFAULT 0,
     NivelDeReorden      SMALLINT       NOT NULL DEFAULT 0,
     Descontinuado       BIT            NOT NULL DEFAULT 0,
+    Activo              BIT            NOT NULL DEFAULT 1,
     CONSTRAINT FK_Productos_Proveedores FOREIGN KEY (ProveedorID) REFERENCES dbo.Proveedores(ProveedorID),
     CONSTRAINT FK_Productos_Categorias  FOREIGN KEY (CategoriaID) REFERENCES dbo.Categorias(CategoriaID)
 );
@@ -95,6 +98,7 @@ CREATE TABLE dbo.Pedidos (
     Destinatario    NVARCHAR(60) NULL,
     CiudadDestino   NVARCHAR(30) NULL,
     PaisDestino     NVARCHAR(30) NULL,
+    Activo          BIT          NOT NULL DEFAULT 1,
     CONSTRAINT FK_Pedidos_Clientes       FOREIGN KEY (ClienteID)       REFERENCES dbo.Clientes(ClienteID),
     CONSTRAINT FK_Pedidos_Empleados      FOREIGN KEY (EmpleadoID)      REFERENCES dbo.Empleados(EmpleadoID),
     CONSTRAINT FK_Pedidos_Transportistas FOREIGN KEY (TransportistaID) REFERENCES dbo.Transportistas(TransportistaID)
@@ -216,7 +220,8 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SELECT CategoriaID, NombreCategoria, Descripcion 
-    FROM dbo.Categorias;
+    FROM dbo.Categorias
+    WHERE Activo = 1;
 END;
 GO
 
@@ -227,8 +232,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_InsertarCategoria
 AS
 BEGIN
     SET NOCOUNT ON;
-    INSERT INTO dbo.Categorias (NombreCategoria, Descripcion)
-    VALUES (@NombreCategoria, @Descripcion);
+    INSERT INTO dbo.Categorias (NombreCategoria, Descripcion, Activo)
+    VALUES (@NombreCategoria, @Descripcion, 1);
 
     SELECT SCOPE_IDENTITY() AS CategoriaID;
 END;
@@ -249,13 +254,15 @@ BEGIN
 END;
 GO
 
--- Eliminar
+-- Eliminar (Baja Lógica)
 CREATE OR ALTER PROCEDURE dbo.sp_EliminarCategoria
     @CategoriaID INT
 AS
 BEGIN
     SET NOCOUNT ON;
-    DELETE FROM dbo.Categorias WHERE CategoriaID = @CategoriaID;
+    UPDATE dbo.Categorias 
+    SET Activo = 0 
+    WHERE CategoriaID = @CategoriaID;
 END;
 GO
 
@@ -271,7 +278,8 @@ BEGIN
     SET NOCOUNT ON;
     SELECT ProveedorID, CompaniaNombre, NombreContacto, CargoContacto,
            Direccion, Ciudad, CodigoPostal, Pais, Telefono, Fax
-    FROM dbo.Proveedores;
+    FROM dbo.Proveedores
+    WHERE Activo = 1;
 END;
 GO
 
@@ -289,8 +297,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_InsertarProveedor
 AS
 BEGIN
     SET NOCOUNT ON;
-    INSERT INTO dbo.Proveedores (CompaniaNombre, NombreContacto, CargoContacto, Direccion, Ciudad, CodigoPostal, Pais, Telefono, Fax)
-    VALUES (@CompaniaNombre, @NombreContacto, @CargoContacto, @Direccion, @Ciudad, @CodigoPostal, @Pais, @Telefono, @Fax);
+    INSERT INTO dbo.Proveedores (CompaniaNombre, NombreContacto, CargoContacto, Direccion, Ciudad, CodigoPostal, Pais, Telefono, Fax, Activo)
+    VALUES (@CompaniaNombre, @NombreContacto, @CargoContacto, @Direccion, @Ciudad, @CodigoPostal, @Pais, @Telefono, @Fax, 1);
 
     SELECT SCOPE_IDENTITY() AS ProveedorID;
 END;
@@ -325,13 +333,15 @@ BEGIN
 END;
 GO
 
--- Eliminar
+-- Eliminar (Baja Lógica)
 CREATE OR ALTER PROCEDURE dbo.sp_EliminarProveedor
     @ProveedorID INT
 AS
 BEGIN
     SET NOCOUNT ON;
-    DELETE FROM dbo.Proveedores WHERE ProveedorID = @ProveedorID;
+    UPDATE dbo.Proveedores 
+    SET Activo = 0 
+    WHERE ProveedorID = @ProveedorID;
 END;
 GO
 
@@ -351,7 +361,8 @@ BEGIN
            p.NivelDeReorden, p.Descontinuado
     FROM dbo.Productos p
     LEFT JOIN dbo.Categorias c ON p.CategoriaID = c.CategoriaID
-    LEFT JOIN dbo.Proveedores pr ON p.ProveedorID = pr.ProveedorID;
+    LEFT JOIN dbo.Proveedores pr ON p.ProveedorID = pr.ProveedorID
+    WHERE p.Activo = 1;
 END;
 GO
 
@@ -369,8 +380,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_InsertarProducto
 AS
 BEGIN
     SET NOCOUNT ON;
-    INSERT INTO dbo.Productos (NombreProducto, ProveedorID, CategoriaID, CantidadPorUnidad, PrecioUnidad, UnidadesEnExistencia, UnidadesEnPedido, NivelDeReorden, Descontinuado)
-    VALUES (@NombreProducto, @ProveedorID, @CategoriaID, @CantidadPorUnidad, @PrecioUnidad, @UnidadesEnExistencia, @UnidadesEnPedido, @NivelDeReorden, @Descontinuado);
+    INSERT INTO dbo.Productos (NombreProducto, ProveedorID, CategoriaID, CantidadPorUnidad, PrecioUnidad, UnidadesEnExistencia, UnidadesEnPedido, NivelDeReorden, Descontinuado, Activo)
+    VALUES (@NombreProducto, @ProveedorID, @CategoriaID, @CantidadPorUnidad, @PrecioUnidad, @UnidadesEnExistencia, @UnidadesEnPedido, @NivelDeReorden, @Descontinuado, 1);
 
     SELECT SCOPE_IDENTITY() AS ProductoID;
 END;
@@ -405,13 +416,15 @@ BEGIN
 END;
 GO
 
--- Eliminar
+-- Eliminar (Baja Lógica)
 CREATE OR ALTER PROCEDURE dbo.sp_EliminarProducto
     @ProductoID INT
 AS
 BEGIN
     SET NOCOUNT ON;
-    DELETE FROM dbo.Productos WHERE ProductoID = @ProductoID;
+    UPDATE dbo.Productos 
+    SET Activo = 0 
+    WHERE ProductoID = @ProductoID;
 END;
 GO
 
@@ -433,7 +446,8 @@ BEGIN
     FROM dbo.Pedidos p
     LEFT JOIN dbo.Clientes cl ON p.ClienteID = cl.ClienteID
     LEFT JOIN dbo.Empleados e ON p.EmpleadoID = e.EmpleadoID
-    LEFT JOIN dbo.Transportistas t ON p.TransportistaID = t.TransportistaID;
+    LEFT JOIN dbo.Transportistas t ON p.TransportistaID = t.TransportistaID
+    WHERE p.Activo = 1;
 END;
 GO
 
@@ -451,8 +465,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_InsertarPedido
 AS
 BEGIN
     SET NOCOUNT ON;
-    INSERT INTO dbo.Pedidos (ClienteID, EmpleadoID, FechaPedido, FechaRequerida, FechaEnvio, TransportistaID, Destinatario, CiudadDestino, PaisDestino)
-    VALUES (@ClienteID, @EmpleadoID, @FechaPedido, @FechaRequerida, @FechaEnvio, @TransportistaID, @Destinatario, @CiudadDestino, @PaisDestino);
+    INSERT INTO dbo.Pedidos (ClienteID, EmpleadoID, FechaPedido, FechaRequerida, FechaEnvio, TransportistaID, Destinatario, CiudadDestino, PaisDestino, Activo)
+    VALUES (@ClienteID, @EmpleadoID, @FechaPedido, @FechaRequerida, @FechaEnvio, @TransportistaID, @Destinatario, @CiudadDestino, @PaisDestino, 1);
 
     SELECT SCOPE_IDENTITY() AS PedidoID;
 END;
@@ -487,15 +501,15 @@ BEGIN
 END;
 GO
 
--- Eliminar
+-- Eliminar (Baja Lógica)
 CREATE OR ALTER PROCEDURE dbo.sp_EliminarPedido
     @PedidoID INT
 AS
 BEGIN
     SET NOCOUNT ON;
-    -- Primero eliminamos los detalles asociados para no violar la FK
-    DELETE FROM dbo.DetallePedidos WHERE PedidoID = @PedidoID;
-    DELETE FROM dbo.Pedidos WHERE PedidoID = @PedidoID;
+    UPDATE dbo.Pedidos 
+    SET Activo = 0 
+    WHERE PedidoID = @PedidoID;
 END;
 GO
 
@@ -512,7 +526,8 @@ BEGIN
     SELECT ProveedorID, CompaniaNombre, NombreContacto, CargoContacto,
            Direccion, Ciudad, CodigoPostal, Pais, Telefono, Fax
     FROM dbo.Proveedores
-    WHERE (@NombreContacto IS NULL OR NombreContacto LIKE '%' + @NombreContacto + '%')
+    WHERE Activo = 1
+      AND (@NombreContacto IS NULL OR NombreContacto LIKE '%' + @NombreContacto + '%')
       AND (@Ciudad IS NULL OR Ciudad LIKE '%' + @Ciudad + '%');
 END;
 GO
@@ -539,7 +554,8 @@ BEGIN
     INNER JOIN dbo.Pedidos p ON dp.PedidoID = p.PedidoID
     INNER JOIN dbo.Productos pr ON dp.ProductoID = pr.ProductoID
     LEFT JOIN dbo.Clientes cl ON p.ClienteID = cl.ClienteID
-    WHERE p.FechaPedido BETWEEN @FechaInicio AND @FechaFin
+    WHERE p.Activo = 1
+      AND p.FechaPedido BETWEEN @FechaInicio AND @FechaFin
     ORDER BY p.FechaPedido DESC, p.PedidoID;
 END;
 GO

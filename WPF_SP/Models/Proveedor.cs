@@ -1,4 +1,4 @@
-﻿namespace WPF_SP.Models;
+namespace WPF_SP.Models;
 
 public class Proveedor
 {
@@ -12,4 +12,5 @@ public class Proveedor
     public string? Pais { get; set; }
     public string? Telefono { get; set; }
     public string? Fax { get; set; }
+    public bool Activo { get; set; } = true;
 }

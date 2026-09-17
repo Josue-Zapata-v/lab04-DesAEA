@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 using WPF_SP.Models;
@@ -15,10 +15,15 @@ public partial class ReportesViewModel : ObservableObject
     private ObservableCollection<DetallePedidoReporte> _reporte = new();
 
     [ObservableProperty]
-    private DateTime _fechaInicio = new DateTime(1996, 1, 1);
+    private DateTime _fechaInicio = new DateTime(2026, 1, 1);
 
     [ObservableProperty]
-    private DateTime _fechaFin = new DateTime(1998, 12, 31);
+    private DateTime _fechaFin = new DateTime(2026, 12, 31);
+
+    public ReportesViewModel()
+    {
+        GenerarReporte();
+    }
 
     [RelayCommand]
     private void GenerarReporte()

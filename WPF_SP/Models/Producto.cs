@@ -1,4 +1,4 @@
-﻿namespace WPF_SP.Models;
+namespace WPF_SP.Models;
 
 public class Producto
 {
@@ -14,4 +14,5 @@ public class Producto
     public short? UnidadesEnPedido { get; set; }
     public short? NivelDeReorden { get; set; }
     public bool Descontinuado { get; set; }
+    public bool Activo { get; set; } = true;
 }
