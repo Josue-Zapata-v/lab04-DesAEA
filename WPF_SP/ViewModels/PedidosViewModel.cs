@@ -1,9 +1,10 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
-using WPF_SP.Models;
-using WPF_SP.Data;
+using Neptuno.Data.Models;
+using Neptuno.Data.Data;
 using System;
+using System.Threading.Tasks;
 
 namespace WPF_SP.ViewModels;
 
@@ -19,38 +20,59 @@ public partial class PedidosViewModel : ObservableObject
 
     public PedidosViewModel()
     {
-        Cargar();
+        // Carga asíncrona sin bloquear la UI
+        _ = CargarAsync();
     }
 
     [RelayCommand]
-    private void Cargar() => Pedidos = new ObservableCollection<Pedido>(_repo.ListarPedidos());
-
-    [RelayCommand]
-    private void Guardar()
+    private async Task CargarAsync()
     {
         try
         {
-            if (PedidoSeleccionado.PedidoID == 0) _repo.InsertarPedido(PedidoSeleccionado);
-            else _repo.ActualizarPedido(PedidoSeleccionado);
-            Cargar();
-            Nuevo();
+            var list = await _repo.ListarPedidosAsync();
+            Pedidos = new ObservableCollection<Pedido>(list);
         }
-        catch (Exception ex) { System.Windows.MessageBox.Show(ex.Message); }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(ex.Message, "Error al cargar pedidos", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
     }
 
     [RelayCommand]
-    private void Eliminar()
+    private async Task GuardarAsync()
+    {
+        try
+        {
+            if (PedidoSeleccionado.PedidoID == 0)
+                await _repo.InsertarPedidoAsync(PedidoSeleccionado);
+            else
+                await _repo.ActualizarPedidoAsync(PedidoSeleccionado);
+
+            await CargarAsync();
+            Nuevo();
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(ex.Message, "Error al guardar pedido", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
+    }
+
+    [RelayCommand]
+    private async Task EliminarAsync()
     {
         try
         {
             if (PedidoSeleccionado.PedidoID > 0)
             {
-                _repo.EliminarPedido(PedidoSeleccionado.PedidoID);
-                Cargar();
+                await _repo.EliminarPedidoAsync(PedidoSeleccionado.PedidoID);
+                await CargarAsync();
                 Nuevo();
             }
         }
-        catch (Exception ex) { System.Windows.MessageBox.Show(ex.Message); }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(ex.Message, "Error al eliminar pedido", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
     }
 
     [RelayCommand]

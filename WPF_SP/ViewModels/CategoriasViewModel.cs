@@ -1,9 +1,10 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
-using WPF_SP.Models;
-using WPF_SP.Data;
+using Neptuno.Data.Models;
+using Neptuno.Data.Data;
 using System;
+using System.Threading.Tasks;
 
 namespace WPF_SP.ViewModels;
 
@@ -19,38 +20,59 @@ public partial class CategoriasViewModel : ObservableObject
 
     public CategoriasViewModel()
     {
-        Cargar();
+        // Carga asíncrona sin bloquear el hilo principal de la ventana
+        _ = CargarAsync();
     }
 
     [RelayCommand]
-    private void Cargar() => Categorias = new ObservableCollection<Categoria>(_repo.ListarCategorias());
-
-    [RelayCommand]
-    private void Guardar()
+    private async Task CargarAsync()
     {
         try
         {
-            if (CategoriaSeleccionada.CategoriaID == 0) _repo.InsertarCategoria(CategoriaSeleccionada);
-            else _repo.ActualizarCategoria(CategoriaSeleccionada);
-            Cargar();
-            Nuevo();
+            var list = await _repo.ListarCategoriasAsync();
+            Categorias = new ObservableCollection<Categoria>(list);
         }
-        catch (Exception ex) { System.Windows.MessageBox.Show(ex.Message); }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(ex.Message, "Error al cargar categorías", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
     }
 
     [RelayCommand]
-    private void Eliminar()
+    private async Task GuardarAsync()
+    {
+        try
+        {
+            if (CategoriaSeleccionada.CategoriaID == 0)
+                await _repo.InsertarCategoriaAsync(CategoriaSeleccionada);
+            else
+                await _repo.ActualizarCategoriaAsync(CategoriaSeleccionada);
+
+            await CargarAsync();
+            Nuevo();
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(ex.Message, "Error al guardar categoría", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
+    }
+
+    [RelayCommand]
+    private async Task EliminarAsync()
     {
         try
         {
             if (CategoriaSeleccionada.CategoriaID > 0)
             {
-                _repo.EliminarCategoria(CategoriaSeleccionada.CategoriaID);
-                Cargar();
+                await _repo.EliminarCategoriaAsync(CategoriaSeleccionada.CategoriaID);
+                await CargarAsync();
                 Nuevo();
             }
         }
-        catch (Exception ex) { System.Windows.MessageBox.Show(ex.Message); }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(ex.Message, "Error al eliminar categoría", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
     }
 
     [RelayCommand]

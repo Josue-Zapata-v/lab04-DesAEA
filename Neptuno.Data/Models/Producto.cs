@@ -1,4 +1,4 @@
-namespace WPF_SP.Models;
+namespace Neptuno.Data.Models;
 
 public class Producto
 {

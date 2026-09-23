@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="Neptuno.Data/Neptuno.Data.csproj" />
   <Project Path="WPF_SP/WPF_SP.csproj" />
 </Solution>

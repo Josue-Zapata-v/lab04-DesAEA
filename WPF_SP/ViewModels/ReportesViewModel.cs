@@ -1,9 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
-using WPF_SP.Models;
-using WPF_SP.Data;
+using Neptuno.Data.Models;
+using Neptuno.Data.Data;
 using System;
+using System.Threading.Tasks;
 
 namespace WPF_SP.ViewModels;
 
@@ -22,16 +23,21 @@ public partial class ReportesViewModel : ObservableObject
 
     public ReportesViewModel()
     {
-        GenerarReporte();
+        // Carga asíncrona del reporte inicial
+        _ = GenerarReporteAsync();
     }
 
     [RelayCommand]
-    private void GenerarReporte()
+    private async Task GenerarReporteAsync()
     {
         try
         {
-            Reporte = new ObservableCollection<DetallePedidoReporte>(_repo.ReporteDetallePedidosPorFechas(FechaInicio, FechaFin));
+            var list = await _repo.ReporteDetallePedidosPorFechasAsync(FechaInicio, FechaFin);
+            Reporte = new ObservableCollection<DetallePedidoReporte>(list);
         }
-        catch (Exception ex) { System.Windows.MessageBox.Show(ex.Message); }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(ex.Message, "Error al generar reporte", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
     }
 }
